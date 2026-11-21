@@ -27,7 +27,7 @@ The first release uses Olist alone, PostgreSQL for metrics, Python for loading a
 
 | Metric | Definition and eligibility |
 | --- | --- |
-| On-time delivery | Actual delivery date on or before promised date among delivered orders with both dates. Compare calendar dates and record the timestamp convention. |
+| On-time delivery | Actual delivery date on or before promised date among eligible deliveries. Require both dates and an actual delivery timestamp at or after purchase and before the cutoff. Compare calendar dates and record the timestamp convention. |
 | Delay severity | Actual delivery date minus promised date, with delay bands of on time, 1–2, 3–7 and 8+ days. Report median and p90 delay for late orders. |
 | Low-rating share | Orders with selected review scores 1–2 divided by orders with valid selected scores. |
 | Review coverage | Orders with valid selected scores divided by eligible orders, reported alongside low-rating share. |
@@ -37,18 +37,18 @@ Compare delay bands by purchase month, customer state and category. Show counts 
 
 ## Phase 4 — Excel and presentation (5–7 hours)
 
-- Export the order-level dataset for a refreshable workbook. Use a data tab, metric definitions, QA checks, PivotTables and a summary with month and region filters.
-- Reproduce three SQL totals and rates independently using COUNTIFS, SUMIFS or pivots. Keep formulas visible and reconcile results under the same filters. Manually verify refresh and filters in Excel.
-- Publish the reproducible scripts, an ER diagram, aggregate charts and a one-page memo with evidence, recommended actions, and limitations when ready. Use the dataset attribution in the README.
+- Export the order-level dataset for a refreshable workbook. Use a data tab, metric definitions, QA checks, PivotTables and a summary with purchase month and customer state filters. Follow the [Phase 4 handoff](reports/phase-4-handoff.md) for the CSV schema, workbook refresh and filter checks.
+- Reproduce three SQL totals and rates independently using COUNTIFS, SUMIFS or pivots. Keep formulas visible and reconcile results under the same filters. Manually verify refresh and filters in Excel. Use the overall and November 2017 São Paulo targets in the handoff, with exact counts, rates matching to two decimal places and blank rates for zero denominators.
+- Publish the reproducible scripts, an ER diagram, aggregate charts and a one-page memo with evidence, recommended actions, and limitations when ready. Use the dataset attribution in the README. Track the diagram in `reports/schema.md` and aggregate charts under `reports/charts/`. Keep the workbook local until redistribution of its underlying order data is cleared.
 - A release is ready when a fresh run reproduces the core metrics, Excel ties to SQL, and every recommendation links to evidence. A dashboard and predictive model beyond the workbook are optional follow-ups.
 
 ## Implementation contract
 
-- Freeze purchases from 2017-01-01 inclusive to 2018-01-01 exclusive. After checking extraction coverage, propose a fixed 2018-06-01 exclusive cutoff for observable milestones and reviews. If the audit shows incomplete follow-up, record the revised cutoff before computing ratings. Report unresolved orders with a promise date before cutoff separately as overdue at cutoff, and exclude them from delivered-order rates. Publish status and exclusion counts.
-- Restrict the primary rating comparison to delivered orders with valid actual and promised dates. Compare late vs on-time low-rating share in percentage points among rated orders. Report review coverage using all eligible deliveries in each arm. Compare within state, purchase month, or category and require at least 30 rated orders per arm for a rating comparison. Prioritize segments by late-order volume, and show p90 delay and low-rating share alongside it.
-- Take the latest valid 1–5 rating observed before cutoff by review answer timestamp. Resolve ties by review ID then stable source row number and log conflicting ties. For the sensitivity run, remove pre-delivery reviews before choosing the latest remaining review. Report coverage changes.
+- Freeze purchases from 2017-01-01 inclusive to 2018-01-01 exclusive. Use the fixed 2018-06-01 exclusive cutoff for observable milestones and reviews. Report past-promise orders without observed delivery by source status, including terminal statuses. Exclude those orders from delivered-order rates. Publish status and exclusion counts.
+- Restrict the primary rating comparison to delivered orders with valid actual and promised dates. Compare late vs on-time low-rating share in percentage points among rated orders. Report review coverage using all eligible deliveries in each arm. Compare within state, purchase month, or category and require at least 30 rated orders per arm for a rating comparison. Rank each dimension by the `All late` row in script 05 and show p90 delay and low-rating share alongside volume. Script 07 compares the five known states with the most late orders and at least 30 late orders each, with a minimum of 30 valid pairs per stage and arm.
+- Take the latest valid 1–5 rating observed before cutoff by review answer timestamp. Resolve ties by review ID then stable source row number and log conflicting ties. For the timing sensitivity, exclude reviews created before the delivery calendar date and reselect the latest eligible answer. For ranking sensitivity, select the earliest eligible answer using the same tie-break fields and no creation-date filter. Report coverage changes. Log conflicting scores tied on order, answer timestamp and review ID before the source-row tiebreaker.
 - Keep load logic in `load.py` with a transaction that refreshes staging consistently. Implement the view and metric queries in `sql/`. Export to `data/exports/orders.csv`, build `reports/operations.xlsx`, and write `reports/findings.md`. Reconcile eligible order count, on-time share and low-rating share from SQL and Excel both overall and for one matching monthly/state filter. Require exact integer matches and rate agreement within rounding.
-- Benchmark a selective customer-state and purchase-date slice after choosing a query based on the schema. Fix its filters, use identical inputs and compare scans, buffers and elapsed time across repeated pre/post runs. Document if the planner prefers a sequential scan.
+- The index benchmark is open. Use orders joined to customers for SP purchases from November 1 through November 7, 2017. Compare three measured warm runs per arm with identical SQL and inputs, using a temporary test index on `staging.orders (order_purchase_timestamp)` created inside a transaction that rolls back. Record result parity, scans, buffers and elapsed times in `reports/index-benchmark.md`.
 - In a notification pilot, randomize eligible orders with a predicted missed promise to current practice or proactive notification. Define the review outcome, coverage, and any available support contact rate before running it.
 
 ## Initial audit results
@@ -69,3 +69,7 @@ with a past promise and no observed delivery include canceled and unavailable
 orders, so inspect the status breakdown before treating that count as an open
 backlog. Source statuses reflect the extract. The audit cannot establish when
 an undated status change occurred.
+
+## Closure evidence
+
+See the [Phase 4 handoff](reports/phase-4-handoff.md) for verified results and remaining manual checks. The acquisition date and publisher release identifier remain open if recoverable. Script 08 records source key, relationship, and review tie checks.

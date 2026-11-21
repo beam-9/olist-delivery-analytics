@@ -2,7 +2,7 @@
 
 **Target** [PLAN.md](PLAN.md), lines 1–71
 **Round** 1. Implementation-readiness and codebase-details both completed.
-**Status** Awaiting resolution. Proposed edits to PLAN.md are pending.
+**Status** Resolved for round 1. All nine proposed edits were accepted. Line references below refer to the reviewed revision.
 
 | Finding | Severity and reviewer findings | Proposed resolution |
 | --- | --- | --- |

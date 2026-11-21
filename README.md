@@ -2,7 +2,7 @@
 
 Portfolio study of delivery performance and purchase reviews using the [Olist Brazilian E-Commerce Public Dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce).
 
-**Status:** data loaded into local PostgreSQL staging. See [the project plan](PLAN.md).
+**Status:** 2017 delivery analysis implemented and verified locally. See [the project plan](PLAN.md).
 
 Place the original Olist CSV files in `data/raw/`. The raw files stay local. The publisher lists CC BY-NC-SA 4.0 for the dataset.
 
@@ -50,7 +50,7 @@ against staging and exits with an error if reconciliation fails.
 After building the order summary, run the analysis scripts in order.
 
 ```sh
-for file in sql/0[4-7]_*.sql; do
+for file in sql/0[3-9]_*.sql; do
   docker compose exec -T postgres psql -X -w -v ON_ERROR_STOP=1 -U olist -d olist -f - < "$file" || break
 done
 ```

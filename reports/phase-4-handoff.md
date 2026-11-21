@@ -13,9 +13,9 @@ matched the staging date difference for every eligible delivery.
 
 | Phase | Verified | Open work |
 | --- | --- | --- |
-| 1 | Source counts, relationship coverage, cohort follow-up, status and timestamp audit | Record the acquisition date and publisher release if recoverable. Keep the integrity checks reproducible in the repo. |
-| 2 | Transactional staging refresh, order grain, item reconciliation, and unrated orders | Run the planned index benchmark. Persist checks for review selection and source keys. |
-| 3 | Overall and segmented metrics, pre-delivery review sensitivity, and stage comparisons | Test a different review selection rule independently of the timing filter. Turn findings into investigation priorities and specify the notification pilot. |
+| 1 | Source counts, relationship coverage, cohort follow-up, status and timestamp audit | Record the acquisition date and publisher release if recoverable. Review source integrity output from script 08. |
+| 2 | Transactional staging refresh, order grain, item reconciliation, and unrated orders | Run the planned index benchmark. Review selection and source key checks are tracked in scripts 02 and 08. |
+| 3 | Overall and segmented metrics, pre-delivery review sensitivity, and stage comparisons | Turn findings into investigation priorities and specify the notification pilot. |
 
 ## Findings to carry forward
 
@@ -23,7 +23,7 @@ matched the staging date difference for every eligible delivery.
   ratings were 61.54% of 2,382 rated late orders and 9.20% of 40,697 rated
   on-time orders. Using the latest review created on or after the delivery
   calendar date, the late share fell to 25.66% and coverage fell from 97.11%
-  to 24.79%. Use both views and their denominators in the memo.
+  to 24.79%. Use both views and their denominators in the memo. Selecting the earliest eligible answer alone kept coverage fixed and moved the late low-rating share from 61.54% to 61.59%.
 - **Start with São Paulo and Rio de Janeiro.** They had 650 and 624 late
   deliveries, respectively. In Rio de Janeiro, median carrier-to-delivery
   time was about 675 hours for late deliveries versus 193 hours for on-time
@@ -36,7 +36,7 @@ matched the staging date difference for every eligible delivery.
 ## Build and verify the workbook
 
 1. Run the loader and SQL scripts in numerical order using the README
-   commands. Finish the benchmark as a separate database milestone. Use a
+   commands. Finish the benchmark as a separate database milestone using the fixed slice and index in PLAN.md. Use a
    fixed state and purchase-date filter, repeated warm runs of the identical
    query, and record plans, buffer counts, elapsed times and matching result
    counts. Use an isolated transaction or database for the test index.
