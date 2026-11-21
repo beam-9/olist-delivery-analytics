@@ -1,5 +1,6 @@
 -- One row per staged order. Apply purchase and delivery eligibility in downstream queries.
 CREATE OR REPLACE VIEW public.order_summary AS
+-- Aggregate before joining so multi-item orders still produce one row.
 WITH items_by_order AS (
     SELECT
         i.order_id,
@@ -15,7 +16,7 @@ WITH items_by_order AS (
     GROUP BY i.order_id
 ),
 latest_review AS (
-    -- The plan's proposed snapshot cutoff is exclusive. Source row breaks remaining ties.
+    -- Use the exclusive cutoff recorded in PLAN.md. Source row breaks remaining ties.
     SELECT DISTINCT ON (order_id)
         order_id, review_id, review_score, review_creation_date,
         review_answer_timestamp, source_row_number
@@ -36,9 +37,11 @@ SELECT
     o.order_delivered_customer_date,
     o.order_estimated_delivery_date,
     coalesce(i.item_count, 0) AS item_count,
+    -- Use zero for orders without items and preserve null totals when item values are missing.
     CASE WHEN i.item_count IS NULL THEN 0 ELSE i.item_price_total END AS item_price_total,
     CASE WHEN i.item_count IS NULL THEN 0 ELSE i.freight_total END AS freight_total,
     CASE
+        -- Only known source categories count toward the multi-category group.
         WHEN i.category_count > 1 THEN 'multiple_categories'
         ELSE coalesce(i.category_name, 'unknown')
     END AS order_category,

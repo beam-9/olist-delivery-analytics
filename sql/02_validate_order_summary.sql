@@ -1,10 +1,12 @@
 -- Expected counts apply to the original Olist release used by this project.
+-- Compare staging and the view within one snapshot, even during a concurrent refresh.
 BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
 
 WITH source_items AS (
     SELECT order_id, count(*) AS item_count
     FROM staging.order_items GROUP BY order_id
 ), reviewed_orders AS (
+    -- Check for any source review, including reviews excluded by the view's cutoff.
     SELECT DISTINCT order_id FROM staging.reviews
 ), reconciled AS (
     SELECT

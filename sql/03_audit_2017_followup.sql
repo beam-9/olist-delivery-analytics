@@ -1,3 +1,4 @@
+-- Match the exclusive review cutoff in 01_order_summary.sql.
 WITH cohort AS (
     SELECT *, timestamp '2018-06-01' AS cutoff
     FROM public.order_summary
@@ -11,6 +12,7 @@ SELECT
     count(*) FILTER (WHERE order_estimated_delivery_date IS NULL) AS missing_promise,
     count(*) FILTER (WHERE order_delivered_customer_date IS NULL) AS missing_delivery,
     count(*) FILTER (WHERE order_delivered_customer_date >= cutoff) AS delivered_after_cutoff,
+    -- This count includes terminal statuses such as canceled and unavailable.
     count(*) FILTER (
         WHERE order_estimated_delivery_date < cutoff
           AND (order_delivered_customer_date IS NULL OR order_delivered_customer_date >= cutoff)
@@ -20,6 +22,7 @@ SELECT
           AND order_estimated_delivery_date IS NOT NULL
           AND order_delivered_customer_date >= order_purchase_timestamp
     ) AS eligible_deliveries,
+    -- Count selected reviews across all orders in each source status.
     count(review_score) AS eligible_reviews,
     count(*) FILTER (WHERE order_approved_at < order_purchase_timestamp) AS inverted_purchase_to_approval,
     count(*) FILTER (WHERE order_delivered_carrier_date < order_approved_at) AS inverted_approval_to_carrier,
