@@ -54,3 +54,18 @@ Compare delay bands by purchase month, customer state and category. Show counts 
 ## Initial audit results
 
 The initial 2017 slice includes 43,428 orders marked delivered. Of those, 43,426 have actual and promised dates, 43,100 have at least one matched review, and 315 have multiple review rows. These are coverage checks before the final eligibility rules. Approval-to-carrier timestamps are inverted in 83 cases and carrier-to-customer timestamps in 19. Apply validity separately per stage. Within the highest-volume late segments, compare median and p90 stage durations for late and on-time orders and report valid counts for each phase. Treat differences as leads for investigation.
+
+## 2017 follow-up audit
+
+Run `sql/03_audit_2017_followup.sql` after building the order summary, using
+the same psql command in the README with the audit script as input. It reports
+counts by source status and for the entire 2017 purchase cohort.
+
+Keep June 1, 2018 exclusive as the analysis cutoff. The 45,101 purchases have
+no missing promised dates. All 43,426 recorded customer deliveries occurred
+before the cutoff and meet the primary delivery eligibility rules. Two more
+orders marked delivered have no customer delivery timestamp. The 1,675 orders
+with a past promise and no observed delivery include canceled and unavailable
+orders, so inspect the status breakdown before treating that count as an open
+backlog. Source statuses reflect the extract. The audit cannot establish when
+an undated status change occurred.
