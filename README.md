@@ -12,6 +12,16 @@ A PostgreSQL and Excel study of delivery delays and purchase ratings for 2017 or
 
 [Late deliveries by state](reports/charts/late-by-state.svg) · [Rating sensitivity](reports/charts/rating-sensitivity.svg)
 
+## Tech stack
+
+| Technology | Why we used it | How we used it |
+| --- | --- | --- |
+| Python 3 | Make data checks and loading repeatable | Audit CSV headers and row counts, then load six source tables in a transaction. |
+| PostgreSQL and SQL | Analyse delivery and review data at one row per order | Build the 2017 cohort, calculate metrics, test review-selection rules, and benchmark a timestamp index. |
+| Docker Compose | Make local database setup reproducible | Start PostgreSQL and run the analysis scripts through the container's `psql` client. |
+| Excel and Power Query | Check SQL results in a spreadsheet and explore filtered totals | Import the order export and use PivotTables to reconcile overall and November 2017 São Paulo counts. |
+| LaTeX, BibTeX, and Tectonic | Produce a reproducible research paper | Typeset the manuscript and figures, manage references, and compile the PDF. |
+
 ## Reproduce the analysis
 
 With Python 3 and Docker Compose, place the six required Olist CSVs in `data/raw/` and run the following from the repository root. The dataset is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Source files and the working Excel workbook stay local.
