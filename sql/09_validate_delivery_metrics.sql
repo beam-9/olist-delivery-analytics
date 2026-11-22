@@ -1,6 +1,7 @@
 -- Check integer numerators and denominators before rounding rates for Excel.
 WITH checks AS (
-    SELECT slice.name, count(*) AS eligible, count(*) FILTER (WHERE c.delay_days <= 0) AS on_time,
+    SELECT slice.name, count(*) AS eligible, count(DISTINCT c.order_id) AS unique_orders,
+           count(*) FILTER (WHERE c.delay_days <= 0) AS on_time,
            count(c.review_score) AS rated, count(*) FILTER (WHERE c.review_score BETWEEN 1 AND 2) AS low
     FROM public.delivery_cohort_2017 c
     CROSS JOIN LATERAL (
@@ -11,8 +12,9 @@ WITH checks AS (
 ), expected(name, eligible, on_time, rated, low) AS (
     VALUES ('overall', 43426, 40973, 43079, 5211), ('2017-11 SP', 2898, 2696, 2879, 350)
 )
-SELECT count(*) = 2 AND bool_and((c.eligible, c.on_time, c.rated, c.low)
-    IS NOT DISTINCT FROM (e.eligible, e.on_time, e.rated, e.low)) AS passed
+-- Matching totals can hide a duplicated order replacing another order.
+SELECT count(*) = 2 AND bool_and((c.eligible, c.unique_orders, c.on_time, c.rated, c.low)
+    IS NOT DISTINCT FROM (e.eligible, e.eligible, e.on_time, e.rated, e.low)) AS passed
 FROM expected e FULL JOIN checks c USING (name)
 \gset
 \if :passed

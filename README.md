@@ -42,17 +42,19 @@ docker compose exec -T postgres psql -X -w -v ON_ERROR_STOP=1 -U olist -d olist 
 joining them to orders. It selects the latest valid review answered before
 June 1, 2018, with review ID and source row number breaking ties. All purchase
 dates remain in the view so downstream queries can apply the 2017 cohort.
-The validation script checks order IDs, item counts, and orders without reviews
-against staging and exits with an error if reconciliation fails.
+The validation script checks order IDs, item counts, selected reviews, and orders without
+source reviews against staging and exits with an error if reconciliation fails.
 
 ## Run the 2017 delivery analysis
 
 After building the order summary, run the analysis scripts in order.
 
 ```sh
-for file in sql/0[3-9]_*.sql; do
-  docker compose exec -T postgres psql -X -w -v ON_ERROR_STOP=1 -U olist -d olist -f - < "$file" || break
-done
+(
+  for file in sql/0[3-9]_*.sql; do
+    docker compose exec -T postgres psql -X -w -v ON_ERROR_STOP=1 -U olist -d olist -f - < "$file" || exit $?
+  done
+)
 ```
 
 The cohort uses delivery and promise dates as stored, without timezone
@@ -60,5 +62,7 @@ conversion. The metrics report numerator and denominator counts so the
 rates can be reconciled independently. Segment rating gaps require at least
 30 rated orders per arm. The review sensitivity query removes reviews
 created before the delivery calendar date, then reapplies the latest-review
-rule. The stage query compares elapsed hours for the five states with the
+rule. A second comparison selects the earliest eligible answer to isolate
+the effect of answer ordering. Script 09 asserts unique orders and
+reconciles the overall and November 2017 São Paulo counts. The stage query compares elapsed hours for the five states with the
 most late orders and reports the number of valid timestamp pairs per stage.
