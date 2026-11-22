@@ -10,6 +10,14 @@ Run `python3 audit.py` to validate the required headers and count source records
 
 The original archive was acquired from the publisher’s Kaggle download endpoint. SHA-256: `967e41e04fc306fe604e2a693f488995a8b41e5047418f8a5c8e4abd6deca784`. The archive contained nine CSVs. The starter audit checks the six required inputs.
 
+## Phase 4 deliverables
+
+- [Findings and recommended experiment](reports/findings.md)
+- [Schema diagram](reports/schema.md)
+- [Late deliveries by state](reports/charts/late-by-state.svg) and [rating sensitivity](reports/charts/rating-sensitivity.svg)
+- [Workbook build and QA instructions](reports/phase-4-handoff.md)
+- [Presentation review](reports/phase-4-review.md)
+
 ## Local PostgreSQL
 
 Docker is optional. With Docker Desktop running, start the project database with
