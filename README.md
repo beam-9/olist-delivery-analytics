@@ -1,76 +1,33 @@
 # Olist Delivery Reliability and Customer Experience
 
-Portfolio study of delivery performance and purchase reviews using the [Olist Brazilian E-Commerce Public Dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce).
+A PostgreSQL and Excel study of delivery delays and purchase ratings for 2017 orders in the [Olist Brazilian E-Commerce Public Dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce).
 
-**Status:** 2017 delivery analysis implemented and verified locally. See [the project plan](PLAN.md).
+**[Read the research paper (PDF)](reports/olist-delivery-reliability-study.pdf)** · [Findings and proposed experiment](reports/findings.md) · [Schema](reports/schema.md) · [Excel QA](reports/phase-4-handoff.md)
 
-Place the original Olist CSV files in `data/raw/`. The raw files stay local. The publisher lists CC BY-NC-SA 4.0 for the dataset.
+## Findings
 
-Run `python3 audit.py` to validate the required headers and count source records.
+- Of 43,426 eligible deliveries, 40,973 (94.35%) arrived by the promised date.
+- São Paulo and Rio de Janeiro accounted for 1,274 of 2,453 late deliveries (51.9%).
+- The low-rating gap between late and on-time orders narrowed from 52.34 to 16.47 percentage points when reviews were restricted to those created on or after the delivery date. Late-order review coverage fell from 97.11% to 24.79%.
 
-The original archive was acquired from the publisher’s Kaggle download endpoint. SHA-256: `967e41e04fc306fe604e2a693f488995a8b41e5047418f8a5c8e4abd6deca784`. The archive contained nine CSVs. The starter audit checks the six required inputs.
+[Late deliveries by state](reports/charts/late-by-state.svg) · [Rating sensitivity](reports/charts/rating-sensitivity.svg)
 
-## Phase 4 deliverables
+## Reproduce the analysis
 
-- [Findings and recommended experiment](reports/findings.md)
-- [Schema diagram](reports/schema.md)
-- [Late deliveries by state](reports/charts/late-by-state.svg) and [rating sensitivity](reports/charts/rating-sensitivity.svg)
-- [Workbook build and QA instructions](reports/phase-4-handoff.md)
-- [Presentation review](reports/phase-4-review.md)
-
-## Local PostgreSQL
-
-Docker is optional. With Docker Desktop running, start the project database with
-`docker compose up -d --wait`. Connect to `localhost:5433` using database and
-username `olist` and the local development password in `compose.yaml`.
-A native PostgreSQL installation also works. The CSV audit runs with Python
-alone.
-
-## Load the staging tables
-
-With the PostgreSQL container running, execute `python3 load.py` from the
-repository root. The loader uses the container's psql client and checks all six
-staging row counts against the CSVs before committing. Re-running it refreshes
-the same tables. It keeps fields used by the analysis and omits free-text review
-comments. Review source row numbers count data records starting at 1.
-
-To use a local psql client over the published port, set `PGPASSWORD` to the
-development password in `compose.yaml` and run `python3 load.py --psql /path/to/psql`.
-
-## Build and validate the order summary
-
-After loading staging, run both scripts from the repository root.
-
-```sh
-docker compose exec -T postgres psql -X -w -v ON_ERROR_STOP=1 -U olist -d olist -f - < sql/01_order_summary.sql
-docker compose exec -T postgres psql -X -w -v ON_ERROR_STOP=1 -U olist -d olist -f - < sql/02_validate_order_summary.sql
-```
-
-`public.order_summary` keeps one row per order and aggregates items before
-joining them to orders. It selects the latest valid review answered before
-June 1, 2018, with review ID and source row number breaking ties. All purchase
-dates remain in the view so downstream queries can apply the 2017 cohort.
-The validation script checks order IDs, item counts, selected reviews, and orders without
-source reviews against staging and exits with an error if reconciliation fails.
-
-## Run the 2017 delivery analysis
-
-After building the order summary, run the analysis scripts in order.
+With Python 3 and Docker Compose, place the six required Olist CSVs in `data/raw/` and run the following from the repository root. The dataset is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Source files and the working Excel workbook stay local.
 
 ```sh
 (
-  for file in sql/0[3-9]_*.sql; do
-    docker compose exec -T postgres psql -X -w -v ON_ERROR_STOP=1 -U olist -d olist -f - < "$file" || exit $?
+  set -e
+  python3 audit.py
+  docker compose up -d --wait
+  python3 load.py
+  for file in sql/0[1-9]_*.sql; do
+    docker compose exec -T postgres psql -X -w -v ON_ERROR_STOP=1 -U olist -d olist -f - < "$file"
   done
 )
 ```
 
-The cohort uses delivery and promise dates as stored, without timezone
-conversion. The metrics report numerator and denominator counts so the
-rates can be reconciled independently. Segment rating gaps require at least
-30 rated orders per arm. The review sensitivity query removes reviews
-created before the delivery calendar date, then reapplies the latest-review
-rule. A second comparison selects the earliest eligible answer to isolate
-the effect of answer ordering. Script 09 asserts unique orders and
-reconciles the overall and November 2017 São Paulo counts. The stage query compares elapsed hours for the five states with the
-most late orders and reports the number of valid timestamp pairs per stage.
+For a native PostgreSQL connection, use `python3 load.py --psql /path/to/psql` with the appropriate connection environment. See [compose.yaml](compose.yaml) for the local database configuration and the [Excel handoff](reports/phase-4-handoff.md) for the export and reconciliation steps.
+
+The original nine-file archive was downloaded from Olist’s Kaggle endpoint. SHA-256: `967e41e04fc306fe604e2a693f488995a8b41e5047418f8a5c8e4abd6deca784`.
